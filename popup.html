@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kyara Booster Helper</title>
+  <style>
+    body { width: 290px; margin: 0; padding: 16px; background: #171717; color: #fff; font: 14px Arial, sans-serif; }
+    h1 { font-size: 17px; margin: 0 0 12px; }
+    p { color: #ccc; line-height: 1.4; }
+    button { width: 100%; padding: 10px; border: 0; border-radius: 7px; background: #f59e0b; color: #111; font-weight: bold; cursor: pointer; }
+    button.secondary { margin-top: 8px; background: #333; color: #fff; }
+    #status { margin: 12px 0; color: #fbbf24; }
+    .small { font-size: 11px; color: #aaa; }
+    fieldset { margin: 14px 0; padding: 10px; border: 1px solid #444; border-radius: 8px; }
+    legend { color: #fbbf24; font-weight: bold; }
+    label { display: block; margin: 8px 0; color: #ddd; }
+    input[type="number"] { width: 64px; margin-left: 6px; padding: 4px; border: 1px solid #555; border-radius: 4px; background: #222; color: #fff; }
+    input[type="checkbox"] { margin-right: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Kyara Booster Helper</h1>
+  <div id="status">Chargement…</div>
+  <button id="toggle">Activer l'assistant</button>
+  <button id="open" class="secondary">Ouvrir Kyara</button>
+  <fieldset>
+    <legend>Vente des doublons</legend>
+    <label>Conserver au moins <input id="keepCopies" type="number" min="0" max="99" step="1"> copie(s)</label>
+    <label>Prix recommandé : <input id="pricePercent" type="number" min="50" max="200" step="5">% du prix médian</label>
+    <label><input id="autoSell" type="checkbox">Publier automatiquement</label>
+    <label>Maximum par visite <input id="maxListings" type="number" min="1" max="10" step="1"></label>
+    <p class="small">La vente automatique est désactivée par défaut. Elle utilise les formulaires natifs de Kyara, respecte leur minimum, conserve la réserve choisie et s’arrête si une confirmation manque.</p>
+  </fieldset>
+  <button id="update" class="secondary">Mettre à jour l’extension</button>
+  <p class="small">L'assistant ouvre Kyara dans un onglet en arrière-plan : tu n'as pas besoin de rester dessus. Garde le navigateur ouvert. Les ouvertures payantes ne sont jamais déclenchées volontairement.</p>
+  <script src="popup.js"></script>
+</body>
+</html>
