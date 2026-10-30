@@ -2,9 +2,9 @@
 
 Extension Chrome Manifest V3 qui repère les boosters gratuits sur Kyara et
 automatise leur ouverture, y compris les étapes de révélation et de retour à
-la liste des boosters. Si Kyara propose une commande d'ouverture multiple,
-l'assistant la privilégie ; sinon il ouvre les boosters gratuits un par un.
-Les ouvertures payantes ne sont pas déclenchées volontairement.
+la liste des boosters. L'assistant privilégie les lots gratuits disponibles :
+10 boosters, puis 5, puis un par un lorsqu'aucun lot n'est proposé. Les
+ouvertures payantes ne sont pas déclenchées volontairement.
 
 L'extension propose également des outils facultatifs pour gérer la vente des
 doubles et fonctionne avec Kyara dans un onglet en arrière-plan.

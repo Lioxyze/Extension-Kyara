@@ -80,16 +80,32 @@
 
   function isFreeOpen(text) {
     const hasOpen = /\b(?:ouvrir|open)\b/.test(text);
-    const isFree = /\b(?:gratuit(?:e)?s?|free)\b/.test(text);
+    const isFree = /\b(?:gratuit(?:es|e|s)?(?:ement)?|free)\b/.test(text);
     return hasOpen && isFree &&
       !text.includes('ouvrir un autre') && !text.includes('open another') &&
       !text.includes('changer de booster') && !text.includes('change booster') &&
       !/\b\d[\d.,]*\s*(chakra|gemmes?|diamants?|gems?)\b/.test(text);
   }
 
-  function isFreeMultiOpen(text) {
-    const requestedMultiple = /\b(?:x\s*10|10\s*x|dix fois)\b|×\s*10|10\s*×|\b(?:ouvrir|open)\s+(?:(?:les?|all|tous|toutes)\s+)?(?:10|dix)(?:\s+(?:boosters?|packs?|paquets?))?\b|\b(?:ouvrir|open)\s+(?:tous|toutes|all)\s+(?:les?\s+)?(?:(?:free|gratuit(?:e)?s?)\s+)?(?:boosters?|packs?|paquets?)\b/.test(text);
-    return requestedMultiple && isFreeOpen(text);
+  function freeOpenBatchSize(text) {
+    if (!isFreeOpen(text)) return 0;
+    if (/\b(?:x\s*10|10\s*x)\b|×\s*10|10\s*×|\b(?:ouvrir|open)\s+(?:(?:les?|all|tous|toutes)\s+)?(?:10|dix)(?:\s+(?:boosters?|packs?|paquets?))?\b/.test(text)) {
+      return 10;
+    }
+    if (/\b(?:x\s*5|5\s*x)\b|×\s*5|5\s*×|\b(?:ouvrir|open)\s+(?:(?:les?|all|tous|toutes)\s+)?(?:5|cinq)(?:\s+(?:boosters?|packs?|paquets?))?\b/.test(text)) {
+      return 5;
+    }
+    if (/\b(?:ouvrir|open)\s+(?:tous|toutes|all)\s+(?:les?\s+)?(?:(?:free|gratuit(?:e)?s?)\s+)?(?:boosters?|packs?|paquets?)\b/.test(text)) {
+      return 0;
+    }
+    return 1;
+  }
+
+  function findFreeOpen() {
+    return candidates()
+      .filter(({ text, el }) => freeOpenBatchSize(text) > 0 &&
+        !el.disabled && el.getAttribute('aria-disabled') !== 'true')
+      .sort((a, b) => freeOpenBatchSize(b.text) - freeOpenBatchSize(a.text))[0]?.el || null;
   }
 
   function normalizedText(value) {
@@ -693,7 +709,7 @@
         return;
       }
 
-      const freeOpen = find(text => isFreeMultiOpen(text)) || find(text => isFreeOpen(text));
+      const freeOpen = findFreeOpen();
       if (freeOpen && clickSafely(freeOpen, 'Ouverture du booster gratuit…')) return;
       const reveal = find(text => text.includes('tout révéler') || text.includes('révéler tout') ||
         text.includes('reveal all'));
@@ -703,7 +719,7 @@
       return;
     }
 
-    const freeOpen = find(text => isFreeMultiOpen(text)) || find(text => isFreeOpen(text));
+    const freeOpen = findFreeOpen();
     if (freeOpen && clickSafely(freeOpen, 'Ouverture du booster gratuit…')) return;
     say('Recherche d’un booster gratuit…');
     schedule(IDLE_MS);
