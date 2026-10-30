@@ -8,7 +8,6 @@ const autoSellInput = document.getElementById("autoSell");
 const maxListingsInput = document.getElementById("maxListings");
 
 const LATEST_MANIFEST_URL = "https://api.github.com/repos/Lioxyze/Extension-Kyara/contents/manifest.json?ref=main";
-const UPDATE_ARCHIVE_URL = "https://github.com/Lioxyze/Extension-Kyara/archive/refs/heads/main.zip";
 
 const defaultSettings = {
   kyaraEnabled: true,
@@ -112,10 +111,10 @@ async function checkForUpdate() {
 
     const installedVersion = chrome.runtime.getManifest().version;
     if (compareVersions(manifest.version, installedVersion) > 0) {
-      updateBtn.textContent = `Télécharger la mise à jour ${manifest.version}`;
+      updateBtn.textContent = `Mettre à jour maintenant · ${manifest.version}`;
       updateBtn.hidden = false;
       updateStatusEl.textContent =
-        `Version ${manifest.version} disponible. Après le téléchargement, remplace les fichiers de l’extension puis clique sur « Recharger » dans chrome://extensions.`;
+        `Version ${manifest.version} disponible. Clique pour demander à Chrome de l’installer.`;
       return;
     }
     updateStatusEl.textContent = "";
@@ -126,12 +125,29 @@ async function checkForUpdate() {
 }
 
 updateBtn.addEventListener("click", async () => {
-  try {
-    await chrome.tabs.create({ url: UPDATE_ARCHIVE_URL });
-  } catch (error) {
-    console.error("Kyara Booster Helper: unable to open the update download", error);
-    updateStatusEl.textContent = "Impossible d’ouvrir le téléchargement de la mise à jour.";
-  }
+  updateBtn.disabled = true;
+  updateStatusEl.textContent = "Demande de mise à jour à Chrome…";
+  chrome.runtime.requestUpdateCheck(status => {
+    updateBtn.disabled = false;
+    const error = chrome.runtime.lastError;
+    if (error) {
+      console.error("Kyara Booster Helper: Chrome update check failed", error);
+      updateStatusEl.textContent =
+        "Chrome ne peut pas mettre à jour cette installation directement. Les mises à jour en un clic nécessitent une extension publiée sur le Chrome Web Store.";
+      return;
+    }
+
+    if (status === "update_available") {
+      updateStatusEl.textContent = "Mise à jour trouvée : Chrome va l’installer automatiquement.";
+    } else if (status === "no_update") {
+      updateStatusEl.textContent =
+        "Chrome ne propose pas de mise à jour pour cette installation. Une extension chargée depuis un dossier ne peut pas se mettre à jour en un clic ; une publication sur le Chrome Web Store est nécessaire.";
+    } else if (status === "throttled") {
+      updateStatusEl.textContent = "Vérification déjà effectuée récemment. Réessaie plus tard.";
+    } else {
+      updateStatusEl.textContent = `Résultat de la vérification Chrome : ${status}`;
+    }
+  });
 });
 
 render();
