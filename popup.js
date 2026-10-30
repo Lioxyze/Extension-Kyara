@@ -7,7 +7,7 @@ const pricePercentInput = document.getElementById("pricePercent");
 const autoSellInput = document.getElementById("autoSell");
 const maxListingsInput = document.getElementById("maxListings");
 
-const LATEST_MANIFEST_URL = "https://api.github.com/repos/Lioxyze/Extension-Kyara/contents/manifest.json?ref=main";
+const GITHUB_API_BASE = "https://api.github.com/repos/Lioxyze/Extension-Kyara";
 
 const defaultSettings = {
   kyaraEnabled: true,
@@ -110,10 +110,18 @@ async function checkForUpdate() {
       return;
     }
 
-    const response = await fetch(LATEST_MANIFEST_URL, {
+    const requestOptions = {
       cache: "no-store",
       headers: { Accept: "application/vnd.github+json" }
-    });
+    };
+    const commitResponse = await fetch(`${GITHUB_API_BASE}/commits/main?t=${Date.now()}`, requestOptions);
+    if (!commitResponse.ok) throw new Error(`GitHub a répondu ${commitResponse.status} à la lecture du commit.`);
+    const commit = await commitResponse.json();
+    if (typeof commit.sha !== "string" || !/^[0-9a-f]{40}$/i.test(commit.sha)) {
+      throw new Error("Le commit publié sur GitHub est invalide.");
+    }
+
+    const response = await fetch(`${GITHUB_API_BASE}/contents/manifest.json?ref=${commit.sha}`, requestOptions);
     if (!response.ok) throw new Error(`GitHub a répondu ${response.status}.`);
     const file = await response.json();
     if (typeof file.content !== "string" || file.encoding !== "base64") {
@@ -126,8 +134,19 @@ async function checkForUpdate() {
     }
 
     if (compareVersions(manifest.version, diskManifest.version) > 0) {
-      updateStatusEl.textContent =
-        `Mise à jour ${manifest.version} disponible ; téléchargement automatique programmé.`;
+      let automaticUpdaterConfigured = false;
+      try {
+        const updaterResponse = await fetch(chrome.runtime.getURL("kyara-auto-update.json"), { cache: "no-store" });
+        if (updaterResponse.ok) {
+          const updater = await updaterResponse.json();
+          automaticUpdaterConfigured = updater.enabled === true;
+        }
+      } catch (error) {
+        console.warn("Kyara Booster Helper: automatic updater status unavailable", error);
+      }
+      updateStatusEl.textContent = automaticUpdaterConfigured
+        ? `Mise à jour ${manifest.version} disponible ; le téléchargement automatique est en attente.`
+        : `Mise à jour ${manifest.version} disponible. Lance une fois installer.ps1 depuis ce dossier pour activer les mises à jour automatiques.`;
       return;
     }
     updateStatusEl.textContent = `✓ Extension à jour · version ${installedVersion}`;

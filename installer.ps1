@@ -39,6 +39,8 @@ if (-not $NoTask) {
   }
 
   Start-ScheduledTask -TaskName $TaskName
+  Set-Content -LiteralPath (Join-Path $ExtensionDir 'kyara-auto-update.json') `
+    -Value '{"enabled":true}' -Encoding UTF8
   Write-Host "Mise à jour automatique activée : vérification toutes les 3 heures."
 }
 

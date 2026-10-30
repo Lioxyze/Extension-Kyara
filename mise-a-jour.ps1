@@ -10,8 +10,8 @@ $ProgressPreference = 'SilentlyContinue'
 
 $Repository = 'Lioxyze/Extension-Kyara'
 $Branch = 'main'
-$VersionUrl = "https://api.github.com/repos/$Repository/contents/manifest.json?ref=$Branch"
-$ArchiveUrl = "https://github.com/$Repository/archive/refs/heads/$Branch.zip"
+$CommitUrl = "https://api.github.com/repos/$Repository/commits/$Branch"
+$ContentsUrl = "https://api.github.com/repos/$Repository/contents/manifest.json"
 $TaskName = 'Kyara Booster Helper - mise a jour'
 $LogFile = Join-Path $LogDir 'mise-a-jour.log'
 $ExtensionDir = [IO.Path]::GetFullPath($ExtensionDir)
@@ -40,9 +40,17 @@ function Compare-Version([string]$First, [string]$Second) {
 
 $tempDir = Join-Path ([IO.Path]::GetTempPath()) ('kyara-update-' + [guid]::NewGuid().ToString('N'))
 try {
-  $versionInfo = Invoke-RestMethod -Uri "$VersionUrl&t=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())" `
-    -Headers @{ Accept = 'application/vnd.github+json'; 'User-Agent' = 'Kyara-Booster-Helper' } `
-    -UseBasicParsing -TimeoutSec 60
+  $headers = @{ Accept = 'application/vnd.github+json'; 'User-Agent' = 'Kyara-Booster-Helper' }
+  $commitInfo = Invoke-RestMethod -Uri "${CommitUrl}?t=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())" `
+    -Headers $headers -UseBasicParsing -TimeoutSec 60
+  if ($commitInfo.sha -notmatch '^[0-9a-f]{40}$') {
+    throw 'Commit de la branche GitHub invalide.'
+  }
+  $commitSha = $commitInfo.sha
+  $versionUrl = "${ContentsUrl}?ref=$commitSha"
+  $archiveUrl = "https://github.com/$Repository/archive/$commitSha.zip"
+  $versionInfo = Invoke-RestMethod -Uri $versionUrl `
+    -Headers $headers -UseBasicParsing -TimeoutSec 60
   if ($versionInfo.encoding -ne 'base64' -or -not $versionInfo.content) {
     throw 'Manifeste publié sur GitHub illisible.'
   }
@@ -65,7 +73,7 @@ try {
 
   New-Item -ItemType Directory -Path $tempDir | Out-Null
   $zipPath = Join-Path $tempDir 'extension.zip'
-  Invoke-WebRequest -Uri $ArchiveUrl -OutFile $zipPath -UseBasicParsing -TimeoutSec 180
+  Invoke-WebRequest -Uri $archiveUrl -OutFile $zipPath -UseBasicParsing -TimeoutSec 180
   $extractedDir = Join-Path $tempDir 'extracted'
   Expand-Archive -LiteralPath $zipPath -DestinationPath $extractedDir -Force
 

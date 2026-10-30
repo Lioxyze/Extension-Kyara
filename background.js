@@ -5,7 +5,7 @@ const UPDATE_ALARM_NAME = 'kyara-update-check';
 const UPDATE_CHECK_INTERVAL_MINUTES = 360;
 const UPDATE_NOTIFICATION_ID = 'kyara-update-available';
 const UPDATE_REPOSITORY_URL = 'https://github.com/Lioxyze/Extension-Kyara';
-const LATEST_MANIFEST_URL = 'https://api.github.com/repos/Lioxyze/Extension-Kyara/contents/manifest.json?ref=main';
+const GITHUB_API_BASE = 'https://api.github.com/repos/Lioxyze/Extension-Kyara';
 const KYARA_URLS = ['https://kyara.games/*', 'https://www.kyara.games/*'];
 let ensuringKyaraTab = null;
 
@@ -20,11 +20,19 @@ function compareVersions(first, second) {
 }
 
 async function getLatestVersion() {
-  const response = await fetch(LATEST_MANIFEST_URL, {
+  const options = {
     cache: 'no-store',
     headers: { Accept: 'application/vnd.github+json' }
-  });
-  if (!response.ok) throw new Error(`GitHub a répondu ${response.status}.`);
+  };
+  const commitResponse = await fetch(`${GITHUB_API_BASE}/commits/main?t=${Date.now()}`, options);
+  if (!commitResponse.ok) throw new Error(`GitHub a répondu ${commitResponse.status} à la lecture du commit.`);
+  const commit = await commitResponse.json();
+  if (typeof commit.sha !== 'string' || !/^[0-9a-f]{40}$/i.test(commit.sha)) {
+    throw new Error('Le commit publié sur GitHub est invalide.');
+  }
+
+  const response = await fetch(`${GITHUB_API_BASE}/contents/manifest.json?ref=${commit.sha}`, options);
+  if (!response.ok) throw new Error(`GitHub a répondu ${response.status} à la lecture du manifeste.`);
   const file = await response.json();
   if (typeof file.content !== 'string' || file.encoding !== 'base64') {
     throw new Error('Le manifeste publié sur GitHub est illisible.');
