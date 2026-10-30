@@ -7,7 +7,7 @@ const pricePercentInput = document.getElementById("pricePercent");
 const autoSellInput = document.getElementById("autoSell");
 const maxListingsInput = document.getElementById("maxListings");
 
-const LATEST_MANIFEST_URL = "https://raw.githubusercontent.com/Lioxyze/Extension-Kyara/main/manifest.json";
+const LATEST_MANIFEST_URL = "https://api.github.com/repos/Lioxyze/Extension-Kyara/contents/manifest.json?ref=main";
 const UPDATE_ARCHIVE_URL = "https://github.com/Lioxyze/Extension-Kyara/archive/refs/heads/main.zip";
 
 const defaultSettings = {
@@ -95,9 +95,17 @@ async function checkForUpdate() {
   updateBtn.hidden = true;
   updateStatusEl.textContent = "Vérification des mises à jour…";
   try {
-    const response = await fetch(LATEST_MANIFEST_URL, { cache: "no-store" });
+    const response = await fetch(LATEST_MANIFEST_URL, {
+      cache: "no-store",
+      headers: { Accept: "application/vnd.github+json" }
+    });
     if (!response.ok) throw new Error(`GitHub a répondu ${response.status}.`);
-    const manifest = await response.json();
+    const file = await response.json();
+    if (typeof file.content !== "string" || file.encoding !== "base64") {
+      throw new Error("Le manifeste publié sur GitHub est illisible.");
+    }
+    const manifestBytes = Uint8Array.from(atob(file.content.replace(/\s/g, "")), character => character.charCodeAt(0));
+    const manifest = JSON.parse(new TextDecoder().decode(manifestBytes));
     if (typeof manifest.version !== "string" || !/^\d+(?:\.\d+){0,3}$/.test(manifest.version)) {
       throw new Error("La version publiée dans le manifeste est invalide.");
     }
