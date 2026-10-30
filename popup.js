@@ -94,6 +94,22 @@ async function checkForUpdate() {
   updateBtn.hidden = true;
   updateStatusEl.textContent = "Vérification des mises à jour…";
   try {
+    const installedVersion = chrome.runtime.getManifest().version;
+    const diskResponse = await fetch(chrome.runtime.getURL("manifest.json"), { cache: "no-store" });
+    if (!diskResponse.ok) throw new Error("Le manifeste local de l’extension est illisible.");
+    const diskManifest = await diskResponse.json();
+    if (typeof diskManifest.version !== "string" || !/^\d+(?:\.\d+){0,3}$/.test(diskManifest.version)) {
+      throw new Error("La version locale de l’extension est invalide.");
+    }
+
+    if (compareVersions(diskManifest.version, installedVersion) > 0) {
+      updateBtn.textContent = `Activer la mise à jour · ${diskManifest.version}`;
+      updateBtn.hidden = false;
+      updateStatusEl.textContent =
+        `👀 Regarde, la mise à jour ${diskManifest.version} est prête ! Clique pour l’activer.`;
+      return;
+    }
+
     const response = await fetch(LATEST_MANIFEST_URL, {
       cache: "no-store",
       headers: { Accept: "application/vnd.github+json" }
@@ -109,45 +125,39 @@ async function checkForUpdate() {
       throw new Error("La version publiée dans le manifeste est invalide.");
     }
 
-    const installedVersion = chrome.runtime.getManifest().version;
-    if (compareVersions(manifest.version, installedVersion) > 0) {
-      updateBtn.textContent = `Mettre à jour maintenant · ${manifest.version}`;
-      updateBtn.hidden = false;
+    if (compareVersions(manifest.version, diskManifest.version) > 0) {
       updateStatusEl.textContent =
-        `👀 Regarde, la mise à jour ${manifest.version} est disponible !`;
+        `Mise à jour ${manifest.version} disponible ; téléchargement automatique programmé.`;
       return;
     }
     updateStatusEl.textContent = `✓ Extension à jour · version ${installedVersion}`;
   } catch (error) {
     console.error("Kyara Booster Helper: unable to check for updates", error);
-    updateStatusEl.textContent = "Vérification des mises à jour impossible pour le moment.";
+    updateStatusEl.textContent = "Vérification impossible. Lance l’installateur Windows pour activer les mises à jour automatiques.";
   }
 }
 
 updateBtn.addEventListener("click", async () => {
   updateBtn.disabled = true;
-  updateStatusEl.textContent = "Demande de mise à jour à Chrome…";
-  chrome.runtime.requestUpdateCheck(status => {
+  updateStatusEl.textContent = "Activation de la mise à jour…";
+  try {
+    const tabs = await chrome.tabs.query({
+      url: ["https://kyara.games/*", "https://www.kyara.games/*"]
+    });
+    for (const tab of tabs) {
+      if (!tab.id) continue;
+      try {
+        await chrome.tabs.sendMessage(tab.id, { type: "KYARA_RELOAD_AFTER_UPDATE" });
+      } catch (error) {
+        console.warn(`Kyara Booster Helper: could not schedule page refresh for tab ${tab.id}`, error);
+      }
+    }
+    chrome.runtime.reload();
+  } catch (error) {
+    console.error("Kyara Booster Helper: unable to activate the update", error);
     updateBtn.disabled = false;
-    const error = chrome.runtime.lastError;
-    if (error) {
-      console.error("Kyara Booster Helper: Chrome update check failed", error);
-      updateStatusEl.textContent =
-        "Chrome ne peut pas mettre à jour cette installation directement. Les mises à jour en un clic nécessitent une extension publiée sur le Chrome Web Store.";
-      return;
-    }
-
-    if (status === "update_available") {
-      updateStatusEl.textContent = "Mise à jour trouvée : Chrome va l’installer automatiquement.";
-    } else if (status === "no_update") {
-      updateStatusEl.textContent =
-        "Chrome ne propose pas de mise à jour pour cette installation. Une extension chargée depuis un dossier ne peut pas se mettre à jour en un clic ; une publication sur le Chrome Web Store est nécessaire.";
-    } else if (status === "throttled") {
-      updateStatusEl.textContent = "Vérification déjà effectuée récemment. Réessaie plus tard.";
-    } else {
-      updateStatusEl.textContent = `Résultat de la vérification Chrome : ${status}`;
-    }
-  });
+    updateStatusEl.textContent = "Impossible d’activer la mise à jour. Réessaie depuis le popup de l’extension.";
+  }
 });
 
 render();

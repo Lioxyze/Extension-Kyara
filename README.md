@@ -18,12 +18,19 @@ doubles et fonctionne avec Kyara dans un onglet en arrière-plan.
 
 ## Mises à jour
 
-Le bouton « Mettre à jour l'extension » apparaît lorsqu'une version plus récente
-est publiée sur GitHub. Un clic demande à Chrome de vérifier et d'installer la
-mise à jour. Cette installation en un clic requiert une extension distribuée
-par le Chrome Web Store ; une extension chargée depuis un dossier ne peut pas
-être mise à jour directement par son propre bouton.
+Pour activer les mises à jour automatiques sous Windows, exécute une fois
+`installer.ps1` depuis le dossier exact déjà chargé dans `chrome://extensions` :
 
-L'extension affiche sa version et indique dans le popup si elle est à jour.
-Lorsqu'une nouvelle version est publiée, elle affiche un badge « MAJ » sur
-l'icône et envoie une notification Chrome, au maximum une fois par version.
+```powershell
+powershell -ExecutionPolicy Bypass -File .\installer.ps1
+```
+
+Le programme vérifie GitHub à l'ouverture de session et toutes les trois
+heures, puis remplace les fichiers dans ce même dossier. L'extension affiche
+alors « Activer la mise à jour » dans son popup ; cliquer recharge l'extension
+et l'onglet Kyara. Les réglages sont conservés puisque le dossier et
+l'identifiant de l'extension ne changent pas.
+
+Le popup indique aussi la version installée et signale les versions en attente.
+Une notification Chrome et un badge « MAJ » apparaissent à la publication
+d'une nouvelle version.

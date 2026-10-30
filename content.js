@@ -721,6 +721,9 @@
   window.addEventListener('focus', () => { if (enabled && !busy) schedule(100); });
   chrome.runtime.onMessage.addListener(message => {
     if (message?.type === 'KYARA_WAKE' && enabled && !busy) schedule(50);
+    if (message?.type === 'KYARA_RELOAD_AFTER_UPDATE') {
+      setTimeout(() => location.reload(), 1200);
+    }
   });
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
