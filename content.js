@@ -108,6 +108,53 @@
       .sort((a, b) => freeOpenBatchSize(b.text) - freeOpenBatchSize(a.text))[0]?.el || null;
   }
 
+  function freeBoosterCount() {
+    const counter = [...document.querySelectorAll('[aria-label]')].find(el => {
+      const label = normalizedText(el.getAttribute('aria-label'));
+      return label.includes('booster') &&
+        (label.includes('free') || label.includes('gratuit') || label.includes('gratis'));
+    });
+    if (!counter) return null;
+
+    const text = normalizedText(`${counter.getAttribute('aria-label')} ${counter.textContent}`);
+    const ratio = text.match(/(\d+)\s*\/\s*\d+/);
+    if (ratio) return Number(ratio[1]);
+    const count = text.match(/(\d+)\s*(?:free\s+)?boosters?/);
+    return count ? Number(count[1]) : null;
+  }
+
+  function freeOpenQuantityControls() {
+    const groups = [...document.querySelectorAll('[role="group"]')];
+    const group = groups.find(el => {
+      const label = normalizedText(el.getAttribute('aria-label'));
+      return label.includes('number of boosters to open') ||
+        label.includes('nombre de boosters a ouvrir');
+    });
+    return group ? [...group.querySelectorAll('button')] : [];
+  }
+
+  function selectFreeOpenQuantity(freeOpen) {
+    if (!freeOpen) return false;
+    const count = freeBoosterCount();
+    if (count === null || count <= 0) return false;
+
+    const controls = freeOpenQuantityControls();
+    const sizes = controls.map(button => ({
+      button,
+      size: Number((button.innerText || button.textContent || '').trim().match(/^[×x]\s*(1|5|10)$/i)?.[1])
+    })).filter(option => option.size && option.size <= count &&
+      !option.button.disabled && option.button.getAttribute('aria-disabled') !== 'true');
+    const choice = [10, 5, 1].map(size => sizes.find(option => option.size === size))
+      .find(Boolean);
+    if (!choice || choice.button.getAttribute('aria-pressed') === 'true') return false;
+
+    return clickSafely(choice.button, `Sélection de ${choice.size} booster(s) gratuit(s)…`, 300);
+  }
+
+  function hasNoFreeBoosters() {
+    return freeBoosterCount() === 0;
+  }
+
   function normalizedText(value) {
     return (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
   }
@@ -710,6 +757,12 @@
       }
 
       const freeOpen = findFreeOpen();
+      if (hasNoFreeBoosters()) {
+        say('Aucun booster gratuit restant.');
+        schedule(IDLE_MS);
+        return;
+      }
+      if (selectFreeOpenQuantity(freeOpen)) return;
       if (freeOpen && clickSafely(freeOpen, 'Ouverture du booster gratuit…')) return;
       const reveal = find(text => text.includes('tout révéler') || text.includes('révéler tout') ||
         text.includes('reveal all'));
