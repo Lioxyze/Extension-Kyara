@@ -26,10 +26,12 @@ powershell -ExecutionPolicy Bypass -File .\installer.ps1
 ```
 
 Le programme vérifie GitHub à l'ouverture de session et toutes les trois
-heures, puis remplace les fichiers dans ce même dossier. L'extension affiche
-alors « Activer la mise à jour » dans son popup ; cliquer recharge l'extension
-et l'onglet Kyara. Les réglages sont conservés puisque le dossier et
-l'identifiant de l'extension ne changent pas.
+heures, puis remplace les fichiers dans ce même dossier. Le popup affiche
+toujours la version installée. Une fois les nouveaux fichiers préparés, le
+bouton « Mettre à jour maintenant » apparaît ; clique dessus pour recharger
+l'extension et l'onglet Kyara. Le bouton disparaît alors et la nouvelle version
+est affichée à la prochaine ouverture du popup. Les réglages sont conservés
+puisque le dossier et l'identifiant de l'extension ne changent pas.
 
 Le popup indique aussi la version installée et signale les versions en attente.
 Une notification Chrome et un badge « MAJ » apparaissent à la publication

@@ -2,6 +2,7 @@ const statusEl = document.getElementById("status");
 const toggleBtn = document.getElementById("toggle");
 const updateBtn = document.getElementById("update");
 const updateStatusEl = document.getElementById("updateStatus");
+const versionEl = document.getElementById("version");
 const keepCopiesInput = document.getElementById("keepCopies");
 const pricePercentInput = document.getElementById("pricePercent");
 const autoSellInput = document.getElementById("autoSell");
@@ -92,9 +93,10 @@ function compareVersions(first, second) {
 
 async function checkForUpdate() {
   updateBtn.hidden = true;
+  const installedVersion = chrome.runtime.getManifest().version;
+  versionEl.textContent = `Version installée : ${installedVersion}`;
   updateStatusEl.textContent = "Vérification des mises à jour…";
   try {
-    const installedVersion = chrome.runtime.getManifest().version;
     const diskResponse = await fetch(chrome.runtime.getURL("manifest.json"), { cache: "no-store" });
     if (!diskResponse.ok) throw new Error("Le manifeste local de l’extension est illisible.");
     const diskManifest = await diskResponse.json();
@@ -103,10 +105,11 @@ async function checkForUpdate() {
     }
 
     if (compareVersions(diskManifest.version, installedVersion) > 0) {
-      updateBtn.textContent = `Activer la mise à jour · ${diskManifest.version}`;
+      updateBtn.textContent = `Mettre à jour maintenant · ${diskManifest.version}`;
       updateBtn.hidden = false;
+      versionEl.textContent = `Version installée : ${installedVersion} · version ${diskManifest.version} prête`;
       updateStatusEl.textContent =
-        `👀 Regarde, la mise à jour ${diskManifest.version} est prête ! Clique pour l’activer.`;
+        `👀 La mise à jour est prête. Clique pour l’appliquer.`;
       return;
     }
 
@@ -149,7 +152,8 @@ async function checkForUpdate() {
         : `Mise à jour ${manifest.version} disponible. Lance une fois installer.ps1 depuis ce dossier pour activer les mises à jour automatiques.`;
       return;
     }
-    updateStatusEl.textContent = `✓ Extension à jour · version ${installedVersion}`;
+    versionEl.textContent = `Version installée : ${installedVersion}`;
+    updateStatusEl.textContent = `✓ Extension à jour`;
   } catch (error) {
     console.error("Kyara Booster Helper: unable to check for updates", error);
     updateStatusEl.textContent = "Vérification impossible. Lance l’installateur Windows pour activer les mises à jour automatiques.";
@@ -158,8 +162,21 @@ async function checkForUpdate() {
 
 updateBtn.addEventListener("click", async () => {
   updateBtn.disabled = true;
+  updateBtn.hidden = true;
   updateStatusEl.textContent = "Activation de la mise à jour…";
   try {
+    const installedVersion = chrome.runtime.getManifest().version;
+    const diskResponse = await fetch(chrome.runtime.getURL("manifest.json"), { cache: "no-store" });
+    if (!diskResponse.ok) throw new Error("Le manifeste local de la mise à jour est illisible.");
+    const diskManifest = await diskResponse.json();
+    if (typeof diskManifest.version !== "string" ||
+      compareVersions(diskManifest.version, installedVersion) <= 0) {
+      updateBtn.disabled = false;
+      versionEl.textContent = `Version installée : ${installedVersion}`;
+      updateStatusEl.textContent = `✓ Extension à jour · version ${installedVersion}`;
+      return;
+    }
+
     const tabs = await chrome.tabs.query({
       url: ["https://kyara.games/*", "https://www.kyara.games/*"]
     });
@@ -171,9 +188,12 @@ updateBtn.addEventListener("click", async () => {
         console.warn(`Kyara Booster Helper: could not schedule page refresh for tab ${tab.id}`, error);
       }
     }
-    chrome.runtime.reload();
+    updateStatusEl.textContent = `Mise à jour ${diskManifest.version} appliquée.`;
+    versionEl.textContent = `Nouvelle version : ${diskManifest.version}`;
+    setTimeout(() => chrome.runtime.reload(), 1600);
   } catch (error) {
     console.error("Kyara Booster Helper: unable to activate the update", error);
+    updateBtn.hidden = false;
     updateBtn.disabled = false;
     updateStatusEl.textContent = "Impossible d’activer la mise à jour. Réessaie depuis le popup de l’extension.";
   }
