@@ -23,3 +23,7 @@ est publiée sur GitHub. Un clic demande à Chrome de vérifier et d'installer l
 mise à jour. Cette installation en un clic requiert une extension distribuée
 par le Chrome Web Store ; une extension chargée depuis un dossier ne peut pas
 être mise à jour directement par son propre bouton.
+
+L'extension affiche sa version et indique dans le popup si elle est à jour.
+Lorsqu'une nouvelle version est publiée, elle affiche un badge « MAJ » sur
+l'icône et envoie une notification Chrome, au maximum une fois par version.

@@ -114,10 +114,10 @@ async function checkForUpdate() {
       updateBtn.textContent = `Mettre à jour maintenant · ${manifest.version}`;
       updateBtn.hidden = false;
       updateStatusEl.textContent =
-        `Version ${manifest.version} disponible. Clique pour demander à Chrome de l’installer.`;
+        `👀 Regarde, la mise à jour ${manifest.version} est disponible !`;
       return;
     }
-    updateStatusEl.textContent = "";
+    updateStatusEl.textContent = `✓ Extension à jour · version ${installedVersion}`;
   } catch (error) {
     console.error("Kyara Booster Helper: unable to check for updates", error);
     updateStatusEl.textContent = "Vérification des mises à jour impossible pour le moment.";
