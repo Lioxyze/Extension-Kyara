@@ -18,9 +18,8 @@ doubles et fonctionne avec Kyara dans un onglet en arrière-plan.
 
 ## Mises à jour
 
-La publication des sources sur GitHub ne met pas automatiquement à jour une
-extension Chrome. Pour une installation non empaquetée, récupère les nouveaux
-fichiers puis clique sur « Recharger » dans `chrome://extensions`. Le bouton
-« Mettre à jour l'extension » vérifie les mises à jour gérées par Chrome ; les
-mises à jour automatiques nécessitent une distribution compatible, par exemple
-le Chrome Web Store.
+Le bouton « Mettre à jour l'extension » apparaît lorsqu'une version plus récente
+est publiée sur GitHub. Il télécharge l'archive des sources ; pour une
+installation non empaquetée, remplace les fichiers de l'extension puis clique
+sur « Recharger » dans `chrome://extensions`. La publication des sources sur
+GitHub seule ne met pas automatiquement à jour une extension Chrome.

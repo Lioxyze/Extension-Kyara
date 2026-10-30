@@ -24,7 +24,7 @@
     <div style="font-size:16px;font-weight:bold">Kyara Booster Helper</div>
     <div id="kh-status" style="color:#fbbf24;margin:10px 0">Initialisation…</div>
     <button id="kh-auctions" style="display:none;width:100%;padding:8px;margin-bottom:8px;border:1px solid #34d399;border-radius:7px;background:#064e3b;color:#d1fae5;font-weight:bold;cursor:pointer">Voir mes enchères</button>
-    <button id="kh-toggle" style="width:100%;padding:9px;border:0;border-radius:7px;background:#f59e0b;color:#111;font-weight:bold;cursor:pointer">Arrêter</button>
+    <button id="kh-toggle" style="width:100%;padding:9px;border:0;border-radius:7px;background:#f59e0b;color:#111;font-weight:bold;cursor:pointer">Arrêter les ouvertures gratuites</button>
     <div style="font-size:11px;color:#aaa;margin-top:8px">Gratuit uniquement · veille arrière-plan</div>`;
   (document.documentElement || document.body).appendChild(panel);
 
@@ -50,7 +50,11 @@
     clearTimeout(timer);
     if (enabled) timer = setTimeout(tick, ms);
   }
-  function updateToggle() { toggleBtn.textContent = enabled ? 'Arrêter' : 'Activer'; }
+  function updateToggle() {
+    toggleBtn.textContent = enabled
+      ? 'Arrêter les ouvertures gratuites'
+      : 'Activer les ouvertures gratuites';
+  }
   async function loadSetting() {
     try { const data = await chrome.storage.local.get({ kyaraEnabled: true }); enabled = !!data.kyaraEnabled; }
     catch (_) { enabled = true; }

@@ -1,9 +1,14 @@
 const statusEl = document.getElementById("status");
 const toggleBtn = document.getElementById("toggle");
+const updateBtn = document.getElementById("update");
+const updateStatusEl = document.getElementById("updateStatus");
 const keepCopiesInput = document.getElementById("keepCopies");
 const pricePercentInput = document.getElementById("pricePercent");
 const autoSellInput = document.getElementById("autoSell");
 const maxListingsInput = document.getElementById("maxListings");
+
+const LATEST_MANIFEST_URL = "https://raw.githubusercontent.com/Lioxyze/Extension-Kyara/main/manifest.json";
+const UPDATE_ARCHIVE_URL = "https://github.com/Lioxyze/Extension-Kyara/archive/refs/heads/main.zip";
 
 const defaultSettings = {
   kyaraEnabled: true,
@@ -21,7 +26,9 @@ async function getEnabled() {
 async function render() {
   const settings = await chrome.storage.local.get(defaultSettings);
   statusEl.textContent = settings.kyaraEnabled ? "Assistant activé" : "Assistant arrêté";
-  toggleBtn.textContent = settings.kyaraEnabled ? "Arrêter l'assistant" : "Activer l'assistant";
+  toggleBtn.textContent = settings.kyaraEnabled
+    ? "Arrêter les ouvertures gratuites"
+    : "Activer les ouvertures gratuites";
   keepCopiesInput.value = settings.kyaraSellKeepCopies;
   pricePercentInput.value = settings.kyaraSellPricePercent;
   autoSellInput.checked = settings.kyaraAutoSellEnabled;
@@ -74,25 +81,50 @@ document.getElementById("open").addEventListener("click", async () => {
   }
 });
 
-document.getElementById("update").addEventListener("click", () => {
-  statusEl.textContent = "Recherche d’une mise à jour…";
-  chrome.runtime.requestUpdateCheck((status) => {
-    const error = chrome.runtime.lastError;
-    if (error) {
-      statusEl.textContent = `Mise à jour automatique impossible : ${error.message}. Pour une extension locale, remplace les fichiers puis clique sur « Recharger » dans chrome://extensions.`;
-      return;
+function compareVersions(first, second) {
+  const firstParts = first.split(".").map(Number);
+  const secondParts = second.split(".").map(Number);
+  for (let index = 0; index < Math.max(firstParts.length, secondParts.length); index += 1) {
+    const difference = (firstParts[index] || 0) - (secondParts[index] || 0);
+    if (difference !== 0) return Math.sign(difference);
+  }
+  return 0;
+}
+
+async function checkForUpdate() {
+  updateBtn.hidden = true;
+  updateStatusEl.textContent = "Vérification des mises à jour…";
+  try {
+    const response = await fetch(LATEST_MANIFEST_URL, { cache: "no-store" });
+    if (!response.ok) throw new Error(`GitHub a répondu ${response.status}.`);
+    const manifest = await response.json();
+    if (typeof manifest.version !== "string" || !/^\d+(?:\.\d+){0,3}$/.test(manifest.version)) {
+      throw new Error("La version publiée dans le manifeste est invalide.");
     }
 
-    if (status === "update_available") {
-      statusEl.textContent = "Mise à jour trouvée. Le navigateur va l’installer.";
-    } else if (status === "no_update") {
-      statusEl.textContent = "L’extension est déjà à jour.";
-    } else if (status === "throttled") {
-      statusEl.textContent = "Vérification déjà effectuée récemment. Réessaie plus tard.";
-    } else {
-      statusEl.textContent = `Résultat de la vérification : ${status}`;
+    const installedVersion = chrome.runtime.getManifest().version;
+    if (compareVersions(manifest.version, installedVersion) > 0) {
+      updateBtn.textContent = `Télécharger la mise à jour ${manifest.version}`;
+      updateBtn.hidden = false;
+      updateStatusEl.textContent =
+        `Version ${manifest.version} disponible. Après le téléchargement, remplace les fichiers de l’extension puis clique sur « Recharger » dans chrome://extensions.`;
+      return;
     }
-  });
+    updateStatusEl.textContent = "";
+  } catch (error) {
+    console.error("Kyara Booster Helper: unable to check for updates", error);
+    updateStatusEl.textContent = "Vérification des mises à jour impossible pour le moment.";
+  }
+}
+
+updateBtn.addEventListener("click", async () => {
+  try {
+    await chrome.tabs.create({ url: UPDATE_ARCHIVE_URL });
+  } catch (error) {
+    console.error("Kyara Booster Helper: unable to open the update download", error);
+    updateStatusEl.textContent = "Impossible d’ouvrir le téléchargement de la mise à jour.";
+  }
 });
 
 render();
+checkForUpdate();
