@@ -737,25 +737,32 @@
       ((bodyText.includes('meilleure carte') && bodyText.includes('voir la collection')) ||
         (bodyText.includes('best card') && bodyText.includes('view collection')));
 
-    if (path.startsWith('/ouvrir/') || resultsScreen) {
-      if (resultsScreen) {
-        // Prefer the clear navigation label at the top-left; avoid paid/open-another buttons.
-        const back = find((text, el) => {
-          const label = text.replace(/[‹←\s]/g, '').trim();
-          const href = (el.getAttribute('href') || '').toLowerCase();
-          return (label === 'boosters' || label.endsWith('boosters')) &&
-            !text.includes('ouvrir') && (el.tagName === 'A' || href.includes('booster') || el.getAttribute('role') === 'button' || el.hasAttribute('tabindex'));
-        });
-        if (back && clickSafely(back, 'Retour à la liste des boosters…', 2000)) return;
-        const resultAction = find(text => text.includes('voir les autres') || text.includes('see other') ||
-          text.includes('retour aux boosters') || text.includes('return to boosters') ||
-          text.includes('retour aux paquets') || text.includes('return to packs'));
-        if (resultAction && clickSafely(resultAction, 'Retour à la liste des boosters…', 2000)) return;
-        say('Cartes révélées — recherche du retour…');
-        schedule(IDLE_MS);
-        return;
-      }
+    const openingPage = path.startsWith('/ouvrir/');
+    if (openingPage) {
+      const reveal = find(text => text.includes('tout révéler') || text.includes('révéler tout') ||
+        text.includes('reveal all'));
+      if (reveal && clickSafely(reveal, 'Révélation des cartes…', 1700)) return;
+    }
 
+    if (resultsScreen) {
+      // Prefer the clear navigation label at the top-left; avoid paid/open-another buttons.
+      const back = find((text, el) => {
+        const label = text.replace(/[‹←\s]/g, '').trim();
+        const href = (el.getAttribute('href') || '').toLowerCase();
+        return (label === 'boosters' || label.endsWith('boosters')) &&
+          !text.includes('ouvrir') && (el.tagName === 'A' || href.includes('booster') || el.getAttribute('role') === 'button' || el.hasAttribute('tabindex'));
+      });
+      if (back && clickSafely(back, 'Retour à la liste des boosters…', 2000)) return;
+      const resultAction = find(text => text.includes('voir les autres') || text.includes('see other') ||
+        text.includes('retour aux boosters') || text.includes('return to boosters') ||
+        text.includes('retour aux paquets') || text.includes('return to packs'));
+      if (resultAction && clickSafely(resultAction, 'Retour à la liste des boosters…', 2000)) return;
+      say('Cartes révélées — recherche du retour…');
+      schedule(IDLE_MS);
+      return;
+    }
+
+    if (openingPage) {
       const freeOpen = findFreeOpen();
       if (hasNoFreeBoosters()) {
         say('Aucun booster gratuit restant.');
@@ -764,9 +771,6 @@
       }
       if (selectFreeOpenQuantity(freeOpen)) return;
       if (freeOpen && clickSafely(freeOpen, 'Ouverture du booster gratuit…')) return;
-      const reveal = find(text => text.includes('tout révéler') || text.includes('révéler tout') ||
-        text.includes('reveal all'));
-      if (reveal && clickSafely(reveal, 'Révélation des cartes…', 1700)) return;
       say('Attente de l’étape suivante…');
       schedule(IDLE_MS);
       return;
